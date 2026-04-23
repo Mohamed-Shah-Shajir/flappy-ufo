@@ -8,11 +8,19 @@ canvas.height = 640;
 const ufoImg = new Image();
 ufoImg.src = "assets/ufo.png";
 
+const bgImg = new Image();
+bgImg.src = "assets/bg.png";
+
 const coinImg = new Image();
 coinImg.src = "assets/coin.png";
 
-const bgImg = new Image();
-bgImg.src = "assets/bg.png";
+// COIN SPRITE SETTINGS
+const coinFrameWidth = 128;   // change if needed
+const coinFrameHeight = 128;
+const totalFrames = 8;
+
+let coinFrame = 0;
+let frameTimer = 0;
 
 // SOUNDS
 const coinSound = document.getElementById("coinSound");
@@ -23,14 +31,14 @@ let gameStarted = false;
 let gameOver = false;
 let score = 0;
 
-// UFO (BIGGER + SMOOTHER CONTROL)
+// UFO (SMOOTH + BIGGER)
 let ufo = {
   x: 60,
   y: 200,
-  w: 70,        // bigger size
+  w: 70,
   h: 55,
-  gravity: 0.45,
-  lift: -7,     // less jump (was -9)
+  gravity: 0.3,   // slower fall
+  lift: -6.5,     // controlled jump
   velocity: 0
 };
 
@@ -55,9 +63,9 @@ function handleInput() {
 document.addEventListener("touchstart", handleInput);
 document.addEventListener("click", handleInput);
 
-// CREATE DYNAMIC PIPES
+// CREATE PIPES
 function createPipe() {
-  let gap = 140 + Math.random() * 40; // dynamic gap
+  let gap = 140 + Math.random() * 40;
   let top = Math.random() * 250 + 50;
 
   pipes.push({
@@ -66,7 +74,7 @@ function createPipe() {
     bottom: top + gap,
     width: 65,
     passed: false,
-    speed: 2 + Math.random() * 1 // dynamic speed
+    speed: 2 + Math.random() * 1
   });
 
   coins.push({
@@ -77,14 +85,11 @@ function createPipe() {
   });
 }
 
-// DRAW PIPE (ROUNDED / BETTER LOOK)
+// DRAW PIPE (STYLISH)
 function drawPipe(x, y, width, height) {
   ctx.fillStyle = "#2ecc71";
-
-  // main pipe
   ctx.fillRect(x, y, width, height);
 
-  // top cap (for style)
   ctx.fillStyle = "#27ae60";
   ctx.fillRect(x - 5, y + height - 10, width + 10, 10);
 }
@@ -111,11 +116,17 @@ function update() {
     return;
   }
 
+  // ANIMATE COIN
+  frameTimer++;
+  if (frameTimer % 6 === 0) {
+    coinFrame = (coinFrame + 1) % totalFrames;
+  }
+
   // UFO PHYSICS
   ufo.velocity += ufo.gravity;
   ufo.y += ufo.velocity;
 
-  // slight rotation effect
+  // ROTATION EFFECT
   let angle = Math.min(Math.max(ufo.velocity * 3, -20), 30);
   ctx.save();
   ctx.translate(ufo.x + ufo.w / 2, ufo.y + ufo.h / 2);
@@ -128,19 +139,14 @@ function update() {
     let p = pipes[i];
     p.x -= p.speed;
 
-    // TOP PIPE
     drawPipe(p.x, 0, p.width, p.top);
-
-    // BOTTOM PIPE
     drawPipe(p.x, p.bottom, p.width, canvas.height - p.bottom);
 
-    // SCORE
     if (!p.passed && p.x + p.width < ufo.x) {
       p.passed = true;
       score++;
     }
 
-    // COLLISION
     if (
       ufo.x < p.x + p.width &&
       ufo.x + ufo.w > p.x &&
@@ -150,13 +156,23 @@ function update() {
     }
   }
 
-  // COINS
+  // COINS (SPRITE ANIMATION)
   for (let i = 0; i < coins.length; i++) {
     let c = coins[i];
     c.x -= 2.5;
 
     if (!c.collected) {
-      ctx.drawImage(coinImg, c.x, c.y, c.size, c.size);
+      ctx.drawImage(
+        coinImg,
+        coinFrame * coinFrameWidth,
+        0,
+        coinFrameWidth,
+        coinFrameHeight,
+        c.x,
+        c.y,
+        c.size,
+        c.size
+      );
     }
 
     if (
@@ -172,12 +188,12 @@ function update() {
     }
   }
 
-  // COLLISION WITH GROUND / SKY
+  // COLLISION (GROUND / SKY)
   if (ufo.y + ufo.h >= canvas.height || ufo.y <= 0) {
     die();
   }
 
-  // SCORE DISPLAY
+  // SCORE
   ctx.fillStyle = "white";
   ctx.font = "22px Arial";
   ctx.fillText("Score: " + score, 20, 40);
