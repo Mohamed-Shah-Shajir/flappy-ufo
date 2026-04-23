@@ -23,14 +23,14 @@ let gameStarted = false;
 let gameOver = false;
 let score = 0;
 
-// UFO (PLAYER)
+// UFO (BIGGER + SMOOTHER CONTROL)
 let ufo = {
   x: 60,
   y: 200,
-  w: 50,
-  h: 40,
-  gravity: 0.5,
-  lift: -9,
+  w: 70,        // bigger size
+  h: 55,
+  gravity: 0.45,
+  lift: -7,     // less jump (was -9)
   velocity: 0
 };
 
@@ -40,16 +40,14 @@ let pipes = [];
 // COINS
 let coins = [];
 
-// CONTROLS
+// INPUT
 function handleInput() {
   if (gameOver) {
     location.reload();
     return;
   }
 
-  if (!gameStarted) {
-    gameStarted = true;
-  }
+  if (!gameStarted) gameStarted = true;
 
   ufo.velocity = ufo.lift;
 }
@@ -57,17 +55,18 @@ function handleInput() {
 document.addEventListener("touchstart", handleInput);
 document.addEventListener("click", handleInput);
 
-// CREATE PIPES + COINS
+// CREATE DYNAMIC PIPES
 function createPipe() {
-  let gap = 160;
-  let top = Math.random() * 300 + 50;
+  let gap = 140 + Math.random() * 40; // dynamic gap
+  let top = Math.random() * 250 + 50;
 
   pipes.push({
     x: canvas.width,
     top: top,
     bottom: top + gap,
-    width: 60,
-    passed: false
+    width: 65,
+    passed: false,
+    speed: 2 + Math.random() * 1 // dynamic speed
   });
 
   coins.push({
@@ -76,6 +75,18 @@ function createPipe() {
     size: 30,
     collected: false
   });
+}
+
+// DRAW PIPE (ROUNDED / BETTER LOOK)
+function drawPipe(x, y, width, height) {
+  ctx.fillStyle = "#2ecc71";
+
+  // main pipe
+  ctx.fillRect(x, y, width, height);
+
+  // top cap (for style)
+  ctx.fillStyle = "#27ae60";
+  ctx.fillRect(x - 5, y + height - 10, width + 10, 10);
 }
 
 // GAME LOOP
@@ -104,18 +115,26 @@ function update() {
   ufo.velocity += ufo.gravity;
   ufo.y += ufo.velocity;
 
-  ctx.drawImage(ufoImg, ufo.x, ufo.y, ufo.w, ufo.h);
+  // slight rotation effect
+  let angle = Math.min(Math.max(ufo.velocity * 3, -20), 30);
+  ctx.save();
+  ctx.translate(ufo.x + ufo.w / 2, ufo.y + ufo.h / 2);
+  ctx.rotate(angle * Math.PI / 180);
+  ctx.drawImage(ufoImg, -ufo.w / 2, -ufo.h / 2, ufo.w, ufo.h);
+  ctx.restore();
 
   // PIPES
   for (let i = 0; i < pipes.length; i++) {
     let p = pipes[i];
-    p.x -= 2.5;
+    p.x -= p.speed;
 
-    ctx.fillStyle = "green";
-    ctx.fillRect(p.x, 0, p.width, p.top);
-    ctx.fillRect(p.x, p.bottom, p.width, canvas.height);
+    // TOP PIPE
+    drawPipe(p.x, 0, p.width, p.top);
 
-    // SCORE (pass pipe)
+    // BOTTOM PIPE
+    drawPipe(p.x, p.bottom, p.width, canvas.height - p.bottom);
+
+    // SCORE
     if (!p.passed && p.x + p.width < ufo.x) {
       p.passed = true;
       score++;
@@ -148,12 +167,12 @@ function update() {
       ufo.y + ufo.h > c.y
     ) {
       c.collected = true;
-      score += 2; // bonus
+      score += 2;
       coinSound.play();
     }
   }
 
-  // GROUND / SKY COLLISION
+  // COLLISION WITH GROUND / SKY
   if (ufo.y + ufo.h >= canvas.height || ufo.y <= 0) {
     die();
   }
@@ -163,7 +182,7 @@ function update() {
   ctx.font = "22px Arial";
   ctx.fillText("Score: " + score, 20, 40);
 
-  // GAME OVER SCREEN
+  // GAME OVER
   if (gameOver) {
     ctx.fillStyle = "red";
     ctx.font = "28px Arial";
@@ -191,7 +210,7 @@ setInterval(() => {
   if (gameStarted && !gameOver) {
     createPipe();
   }
-}, 1800);
+}, 1700);
 
-// START GAME
+// START
 update();
