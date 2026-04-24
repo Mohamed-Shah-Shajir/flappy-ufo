@@ -14,13 +14,19 @@ bgImg.src = "assets/bg.png";
 const coinImg = new Image();
 coinImg.src = "assets/coin.png";
 
-// COIN SPRITE SETTINGS
-const coinFrameWidth = 128;   // change if needed
-const coinFrameHeight = 128;
+// COIN SPRITE (AUTO FIX WIDTH)
+let coinFrameWidth = 0;
+let coinFrameHeight = 0;
 const totalFrames = 8;
 
 let coinFrame = 0;
 let frameTimer = 0;
+
+// once image loads → calculate frame width
+coinImg.onload = () => {
+  coinFrameWidth = coinImg.width / totalFrames;
+  coinFrameHeight = coinImg.height;
+};
 
 // SOUNDS
 const coinSound = document.getElementById("coinSound");
@@ -31,14 +37,14 @@ let gameStarted = false;
 let gameOver = false;
 let score = 0;
 
-// UFO (SMOOTH + BIGGER)
+// UFO
 let ufo = {
   x: 60,
   y: 200,
   w: 70,
   h: 55,
-  gravity: 0.3,   // slower fall
-  lift: -6.5,     // controlled jump
+  gravity: 0.3,
+  lift: -6.5,
   velocity: 0
 };
 
@@ -63,10 +69,10 @@ function handleInput() {
 document.addEventListener("touchstart", handleInput);
 document.addEventListener("click", handleInput);
 
-// CREATE PIPES
+// CREATE PIPES (BIG GAP)
 function createPipe() {
-  let gap = 140 + Math.random() * 40;
-  let top = Math.random() * 250 + 50;
+  let gap = 190; // increased gap
+  let top = Math.random() * 220 + 50;
 
   pipes.push({
     x: canvas.width,
@@ -74,18 +80,18 @@ function createPipe() {
     bottom: top + gap,
     width: 65,
     passed: false,
-    speed: 2 + Math.random() * 1
+    speed: 2
   });
 
   coins.push({
     x: canvas.width + 30,
     y: top + gap / 2 - 15,
-    size: 30,
+    size: 35,
     collected: false
   });
 }
 
-// DRAW PIPE (STYLISH)
+// DRAW PIPE
 function drawPipe(x, y, width, height) {
   ctx.fillStyle = "#2ecc71";
   ctx.fillRect(x, y, width, height);
@@ -116,7 +122,7 @@ function update() {
     return;
   }
 
-  // ANIMATE COIN
+  // COIN ANIMATION
   frameTimer++;
   if (frameTimer % 6 === 0) {
     coinFrame = (coinFrame + 1) % totalFrames;
@@ -126,7 +132,6 @@ function update() {
   ufo.velocity += ufo.gravity;
   ufo.y += ufo.velocity;
 
-  // ROTATION EFFECT
   let angle = Math.min(Math.max(ufo.velocity * 3, -20), 30);
   ctx.save();
   ctx.translate(ufo.x + ufo.w / 2, ufo.y + ufo.h / 2);
@@ -156,12 +161,12 @@ function update() {
     }
   }
 
-  // COINS (SPRITE ANIMATION)
+  // COINS
   for (let i = 0; i < coins.length; i++) {
     let c = coins[i];
-    c.x -= 2.5;
+    c.x -= 2;
 
-    if (!c.collected) {
+    if (!c.collected && coinFrameWidth > 0) {
       ctx.drawImage(
         coinImg,
         coinFrame * coinFrameWidth,
@@ -184,6 +189,8 @@ function update() {
     ) {
       c.collected = true;
       score += 2;
+
+      coinSound.currentTime = 0;
       coinSound.play();
     }
   }
@@ -213,20 +220,24 @@ function update() {
   requestAnimationFrame(update);
 }
 
-// DIE
+// DIE (FIX SOUND OVERLAP)
 function die() {
   if (!gameOver) {
     gameOver = true;
+
+    coinSound.pause();
+    coinSound.currentTime = 0;
+
     dieSound.play();
   }
 }
 
-// SPAWN LOOP
+// SPAWN LOOP (5 SECONDS)
 setInterval(() => {
   if (gameStarted && !gameOver) {
     createPipe();
   }
-}, 1700);
+}, 5000);
 
 // START
 update();
