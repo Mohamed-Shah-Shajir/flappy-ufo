@@ -223,8 +223,11 @@ function update() {
 
   // SCORE
   ctx.fillStyle = "white";
-  ctx.font = "22px Arial";
-  ctx.fillText("Score: " + score, 20, 40);
+ctx.font = "22px Arial";
+ctx.textBaseline = "top";
+ctx.textAlign = "left";
+
+ctx.fillText("Score: " + score, 10, 10);
 
   // GAME OVER
   if (gameOver) {
