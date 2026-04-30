@@ -121,11 +121,11 @@ if (!gameStarted) {
   ctx.fillText("Tap to Start", canvas.width / 2, 220);
 
   // 🛸 Centered UFO below text
-  let startUfoWidth = 180;
-  let startUfoHeight = 140;
+  let startUfoWidth = canvas.width * 0.6;   // 60% of screen width
+  let startUfoHeight = startUfoWidth * (55 / 70); // keep same ratio
 
   let ufoX = canvas.width / 2 - startUfoWidth / 2;
-  let ufoY = 270;
+  let ufoY = 260;
 
   ctx.drawImage(ufoImg, ufoX, ufoY, startUfoWidth, startUfoHeight);
 
