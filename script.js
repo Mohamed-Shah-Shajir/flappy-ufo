@@ -14,7 +14,7 @@ bgImg.src = "assets/bg.png";
 const coinImg = new Image();
 coinImg.src = "assets/coin.png";
 
-// 🪙 COIN SPRITE (GRID FIX)
+// 🪙 COIN SPRITE (2x5 GRID)
 const rows = 2;
 const cols = 5;
 const totalFrames = rows * cols;
@@ -50,7 +50,7 @@ let ufo = {
   velocity: 0
 };
 
-// PIPES
+// PIPES & COINS
 let pipes = [];
 let coins = [];
 
@@ -108,32 +108,30 @@ function update() {
   ctx.drawImage(bgImg, 0, 0, canvas.width, canvas.height);
 
   // START SCREEN
-if (!gameStarted) {
-  ctx.fillStyle = "white";
-  ctx.textAlign = "center";
+  if (!gameStarted) {
+    ctx.fillStyle = "white";
+    ctx.textAlign = "center";
 
-  // Title
-  ctx.font = "28px Arial";
-  ctx.fillText("Navami Fly", canvas.width / 2, 180);
+    ctx.font = "28px Arial";
+    ctx.fillText("Navami Fly", canvas.width / 2, 180);
 
-  // Subtitle
-  ctx.font = "18px Arial";
-  ctx.fillText("Tap to Start", canvas.width / 2, 220);
+    ctx.font = "18px Arial";
+    ctx.fillText("Tap to Start", canvas.width / 2, 220);
 
-  // 🛸 Centered UFO below text
-  let startUfoWidth = canvas.width * 0.6;   // 60% of screen width
-  let startUfoHeight = startUfoWidth * (55 / 70); // keep same ratio
+    // BIG CENTER UFO
+    let startUfoWidth = canvas.width * 0.65;
+    let startUfoHeight = startUfoWidth * (55 / 70);
 
-  let ufoX = canvas.width / 2 - startUfoWidth / 2;
-  let ufoY = 260;
+    let ufoX = canvas.width / 2 - startUfoWidth / 2;
+    let ufoY = 260;
 
-  ctx.drawImage(ufoImg, ufoX, ufoY, startUfoWidth, startUfoHeight);
+    ctx.drawImage(ufoImg, ufoX, ufoY, startUfoWidth, startUfoHeight);
 
-  requestAnimationFrame(update);
-  return;
-}
+    requestAnimationFrame(update);
+    return;
+  }
 
-  // 🪙 COIN ANIMATION
+  // COIN ANIMATION
   frameTimer++;
   if (frameTimer % 6 === 0) {
     coinFrame = (coinFrame + 1) % totalFrames;
@@ -143,12 +141,21 @@ if (!gameStarted) {
   ufo.velocity += ufo.gravity;
   ufo.y += ufo.velocity;
 
+  // ROTATION
   let angle = Math.min(Math.max(ufo.velocity * 3, -20), 30);
   ctx.save();
   ctx.translate(ufo.x + ufo.w / 2, ufo.y + ufo.h / 2);
   ctx.rotate(angle * Math.PI / 180);
   ctx.drawImage(ufoImg, -ufo.w / 2, -ufo.h / 2, ufo.w, ufo.h);
   ctx.restore();
+
+  // 🎯 SMALL HITBOX
+  let hitbox = {
+    x: ufo.x + ufo.w * 0.2,
+    y: ufo.y + ufo.h * 0.2,
+    w: ufo.w * 0.6,
+    h: ufo.h * 0.6
+  };
 
   // PIPES
   for (let i = 0; i < pipes.length; i++) {
@@ -164,21 +171,20 @@ if (!gameStarted) {
     }
 
     if (
-      ufo.x < p.x + p.width &&
-      ufo.x + ufo.w > p.x &&
-      (ufo.y < p.top || ufo.y + ufo.h > p.bottom)
+      hitbox.x < p.x + p.width &&
+      hitbox.x + hitbox.w > p.x &&
+      (hitbox.y < p.top || hitbox.y + hitbox.h > p.bottom)
     ) {
       die();
     }
   }
 
-  // 🪙 COINS (FIXED GRID ANIMATION)
+  // COINS
   for (let i = 0; i < coins.length; i++) {
     let c = coins[i];
     c.x -= 2.5;
 
     if (!c.collected && frameWidth > 0) {
-
       let col = coinFrame % cols;
       let row = Math.floor(coinFrame / cols);
 
@@ -197,10 +203,10 @@ if (!gameStarted) {
 
     if (
       !c.collected &&
-      ufo.x < c.x + c.size &&
-      ufo.x + ufo.w > c.x &&
-      ufo.y < c.y + c.size &&
-      ufo.y + ufo.h > c.y
+      hitbox.x < c.x + c.size &&
+      hitbox.x + hitbox.w > c.x &&
+      hitbox.y < c.y + c.size &&
+      hitbox.y + hitbox.h > c.y
     ) {
       c.collected = true;
       score += 2;
@@ -210,7 +216,7 @@ if (!gameStarted) {
     }
   }
 
-  // COLLISION
+  // GROUND / SKY COLLISION
   if (ufo.y + ufo.h >= canvas.height || ufo.y <= 0) {
     die();
   }
