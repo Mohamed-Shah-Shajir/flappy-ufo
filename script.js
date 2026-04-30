@@ -14,18 +14,20 @@ bgImg.src = "assets/bg.png";
 const coinImg = new Image();
 coinImg.src = "assets/coin.png";
 
-// COIN SPRITE (AUTO FIX WIDTH)
-let coinFrameWidth = 0;
-let coinFrameHeight = 0;
-const totalFrames = 8;
+// 🪙 COIN SPRITE (GRID FIX)
+const rows = 2;
+const cols = 5;
+const totalFrames = rows * cols;
 
 let coinFrame = 0;
 let frameTimer = 0;
 
-// once image loads → calculate frame width
+let frameWidth = 0;
+let frameHeight = 0;
+
 coinImg.onload = () => {
-  coinFrameWidth = coinImg.width / totalFrames;
-  coinFrameHeight = coinImg.height;
+  frameWidth = coinImg.width / cols;
+  frameHeight = coinImg.height / rows;
 };
 
 // SOUNDS
@@ -43,15 +45,13 @@ let ufo = {
   y: 200,
   w: 70,
   h: 55,
-  gravity: 0.3,
-  lift: -6.5,
+  gravity: 0.2,
+  lift: -5.5,
   velocity: 0
 };
 
 // PIPES
 let pipes = [];
-
-// COINS
 let coins = [];
 
 // INPUT
@@ -69,9 +69,9 @@ function handleInput() {
 document.addEventListener("touchstart", handleInput);
 document.addEventListener("click", handleInput);
 
-// CREATE PIPES (BIG GAP)
+// CREATE PIPES
 function createPipe() {
-  let gap = 190; // increased gap
+  let gap = 190;
   let top = Math.random() * 220 + 50;
 
   pipes.push({
@@ -80,7 +80,7 @@ function createPipe() {
     bottom: top + gap,
     width: 65,
     passed: false,
-    speed: 2
+    speed: 2.3
   });
 
   coins.push({
@@ -108,21 +108,32 @@ function update() {
   ctx.drawImage(bgImg, 0, 0, canvas.width, canvas.height);
 
   // START SCREEN
-  if (!gameStarted) {
-    ctx.fillStyle = "white";
-    ctx.font = "28px Arial";
-    ctx.textAlign = "center";
+if (!gameStarted) {
+  ctx.fillStyle = "white";
+  ctx.textAlign = "center";
 
-    ctx.fillText("UFO Flappy", canvas.width / 2, 200);
-    ctx.font = "18px Arial";
-    ctx.fillText("Tap to Start", canvas.width / 2, 240);
+  // Title
+  ctx.font = "28px Arial";
+  ctx.fillText("Navami Fly", canvas.width / 2, 180);
 
-    ctx.drawImage(ufoImg, ufo.x, ufo.y, ufo.w, ufo.h);
-    requestAnimationFrame(update);
-    return;
-  }
+  // Subtitle
+  ctx.font = "18px Arial";
+  ctx.fillText("Tap to Start", canvas.width / 2, 220);
 
-  // COIN ANIMATION
+  // 🛸 Centered UFO below text
+  let startUfoWidth = 180;
+  let startUfoHeight = 140;
+
+  let ufoX = canvas.width / 2 - startUfoWidth / 2;
+  let ufoY = 270;
+
+  ctx.drawImage(ufoImg, ufoX, ufoY, startUfoWidth, startUfoHeight);
+
+  requestAnimationFrame(update);
+  return;
+}
+
+  // 🪙 COIN ANIMATION
   frameTimer++;
   if (frameTimer % 6 === 0) {
     coinFrame = (coinFrame + 1) % totalFrames;
@@ -161,18 +172,22 @@ function update() {
     }
   }
 
-  // COINS
+  // 🪙 COINS (FIXED GRID ANIMATION)
   for (let i = 0; i < coins.length; i++) {
     let c = coins[i];
-    c.x -= 2;
+    c.x -= 2.5;
 
-    if (!c.collected && coinFrameWidth > 0) {
+    if (!c.collected && frameWidth > 0) {
+
+      let col = coinFrame % cols;
+      let row = Math.floor(coinFrame / cols);
+
       ctx.drawImage(
         coinImg,
-        coinFrame * coinFrameWidth,
-        0,
-        coinFrameWidth,
-        coinFrameHeight,
+        col * frameWidth,
+        row * frameHeight,
+        frameWidth,
+        frameHeight,
         c.x,
         c.y,
         c.size,
@@ -195,7 +210,7 @@ function update() {
     }
   }
 
-  // COLLISION (GROUND / SKY)
+  // COLLISION
   if (ufo.y + ufo.h >= canvas.height || ufo.y <= 0) {
     die();
   }
@@ -211,7 +226,7 @@ function update() {
     ctx.font = "28px Arial";
     ctx.textAlign = "center";
 
-    ctx.fillText("Game Over", canvas.width / 2, 300);
+    ctx.fillText("Navami Down", canvas.width / 2, 300);
     ctx.font = "18px Arial";
     ctx.fillText("Tap to Restart", canvas.width / 2, 340);
     return;
@@ -220,7 +235,7 @@ function update() {
   requestAnimationFrame(update);
 }
 
-// DIE (FIX SOUND OVERLAP)
+// DIE
 function die() {
   if (!gameOver) {
     gameOver = true;
@@ -232,7 +247,7 @@ function die() {
   }
 }
 
-// SPAWN LOOP (5 SECONDS)
+// PIPE EVERY 5 SEC
 setInterval(() => {
   if (gameStarted && !gameOver) {
     createPipe();
